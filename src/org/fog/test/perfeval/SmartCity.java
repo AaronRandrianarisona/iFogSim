@@ -54,10 +54,10 @@ public class SmartCity {
 	/*
 	 * Left & right latency for Datacenter pour le projet
 	 */
-	public static final float leftLatencyDC = 0 ;
-	public static final float rightLatencyDC = 0;
-	public static final float leftLatencyRFOG = 0;
-	public static final float rightLatencyRFOG = 0;
+	public static final float leftLatencyDC = 1000 ;
+	public static final float rightLatencyDC = 1000;
+	public static final float leftLatencyRFOG = 100;
+	public static final float rightLatencyRFOG = 100;
 	
 	/*
 	 * Up latencies eg between DC and RFOG child
