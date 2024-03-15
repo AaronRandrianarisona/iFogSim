@@ -21,7 +21,7 @@ public class DelayMatrix_Float {
 	/**
 	 * matrix holding delay information between any two nodes
 	 */
-	protected float[][] mDelayMatrix = null;
+	protected static float[][] mDelayMatrix = null;
 
 	/**
 	 * number of nodes in the distance-aware-topology
@@ -76,6 +76,7 @@ public class DelayMatrix_Float {
 
 		// number of nodes inside the network
 		mTotalNodeNum = graph.getNumberOfNodes();
+		System.out.println("mTotalNodeNum:"+mTotalNodeNum);
 
 		mDelayMatrix = new float[mTotalNodeNum][mTotalNodeNum];
 
@@ -91,6 +92,8 @@ public class DelayMatrix_Float {
 		TopologicalLink edge;
 		while (itr.hasNext()) {
 			edge = itr.next();
+			
+			System.out.println(edge.toString());
 
 			mDelayMatrix[edge.getSrcNodeID()][edge.getDestNodeID()] = edge.getLinkDelay();
 
@@ -141,4 +144,10 @@ public class DelayMatrix_Float {
 
 		return buffer.toString();
 	}
+	
+	public static float getFastestLink(int src, int dest){
+		// -3 because fogIds start from 3 
+		return mDelayMatrix[src-3][dest-3];
+	}
+	
 }

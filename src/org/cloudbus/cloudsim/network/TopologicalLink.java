@@ -79,5 +79,11 @@ public class TopologicalLink {
 	public float getLinkBw() {
 		return linkBw;
 	}
+	
+	
+	public String toString() {
+		return "Edge : src "+getSrcNodeID()+" dest "+getDestNodeID()+" latency "+linkDelay;
+		
+	}
 
 }

@@ -41,10 +41,6 @@ public class Application {
 	
 	private Map<String, AppEdge> edgeMap;
 
-	protected Map<String, List<String>> specialPlacementInfo = new HashMap<>(); // module name to placement device staring with
-
-	protected DAG dag;
-
 	/**
 	 * Creates a plain vanilla application with no modules and edges.
 	 * @param appId
@@ -61,6 +57,7 @@ public class Application {
 	 * @param ram
 	 */
 	public void addAppModule(String moduleName, int ram){
+		System.out.println("add Module: "+moduleName+" with ram: "+ram+" to application");
 		int mips = 1000;
 		long size = 10000;
 		long bw = 1000;
@@ -72,22 +69,21 @@ public class Application {
 		getModules().add(module);
 		
 	}
-
-	/**
-	 * @param moduleName
-	 * @param ram
-	 * @param mips
-	 * @param size
-	 */
-	public void addAppModule(String moduleName, int ram, int mips, int size) {
+	
+	public void addAppModule(String moduleName, int mips, int ram){
+		System.out.println("add Module: "+moduleName+" with ram: "+ram+" to application");
+		
+		long size = 10000;
 		long bw = 1000;
 		String vmm = "Xen";
-
-		AppModule module = new AppModule(FogUtils.generateEntityId(), moduleName, getAppId(), getUserId(),
+		
+		AppModule module = new AppModule(FogUtils.generateEntityId(), moduleName, appId, userId, 
 				mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), new HashMap<Pair<String, String>, SelectivityModel>());
-
+		
 		getModules().add(module);
+		
 	}
+	
 	
 	/**
 	 * Adds a non-periodic edge to the application model.
@@ -101,6 +97,8 @@ public class Application {
 	 */
 	public void addAppEdge(String source, String destination, double tupleCpuLength, 
 			double tupleNwLength, String tupleType, int direction, int edgeType){
+		
+		System.out.println("add AppEdge between source : "+source+" and destination : "+destination+" tupleType : "+tupleType);
 		AppEdge edge = new AppEdge(source, destination, tupleCpuLength, tupleNwLength, tupleType, direction, edgeType);
 		getEdges().add(edge);
 		getEdgeMap().put(edge.getTupleType(), edge);
@@ -131,6 +129,8 @@ public class Application {
 	 * @param selectivityModel Selectivity model governing the relation between the incoming and outgoing edge
 	 */
 	public void addTupleMapping(String moduleName, String inputTupleType, String outputTupleType, SelectivityModel selectivityModel){
+		System.out.println("add tuple mapping on module : "+moduleName+" inputTupleType :"+inputTupleType+" outputTupleType : "+outputTupleType+" selectivity : "
+					+selectivityModel.getSelectivity());
 		AppModule module = getModuleByName(moduleName);
 		module.getSelectivityMap().put(new Pair<String, String>(inputTupleType, outputTupleType), selectivityModel);
 	}
@@ -246,7 +246,6 @@ public class Application {
 						tuple.setDirection(edge.getDirection());
 						tuple.setTupleType(edge.getTupleType());
 						tuple.setSourceModuleId(sourceModuleId);
-						tuple.setTraversedMicroservices(inputTuple.getTraversed());
 
 						tuples.add(tuple);
 					}
@@ -358,43 +357,5 @@ public class Application {
 
 	public void setEdgeMap(Map<String, AppEdge> edgeMap) {
 		this.edgeMap = edgeMap;
-	}
-
-	public List<String> getModuleNames(){
-		List<String> appModuleNames = new ArrayList<>();
-		for(AppModule module:getModules()){
-			appModuleNames.add(module.getName());
-		}
-		return appModuleNames;
-	}
-
-	public void setSpecialPlacementInfo(String moduleName, String device) {
-		if (specialPlacementInfo.containsKey(moduleName))
-			specialPlacementInfo.get(moduleName).add(device);
-		else {
-			List<String> devices = new ArrayList<>();
-			devices.add(device);
-			specialPlacementInfo.put(moduleName, devices);
-		}
-	}
-
-	public Map<String, List<String>> getSpecialPlacementInfo() {
-		return specialPlacementInfo;
-	}
-
-	public void createDAG() {
-		List<String> moduleNames = new ArrayList<>();
-		for (AppModule module : getModules()) {
-			moduleNames.add(module.getName());
-		}
-		dag = new DAG(moduleNames);
-		for (AppEdge edge : getEdges()) {
-			if (edge.getDirection() == Tuple.UP)
-				dag.addEdge(edge.getSource(), edge.getDestination());
-		}
-	}
-
-	public DAG getDAG() {
-		return dag;
 	}
 }

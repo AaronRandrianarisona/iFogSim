@@ -241,7 +241,7 @@ public class CloudSim {
 	 * @return true, if successful otherwise.
 	 */
 	public static boolean terminateSimulation(double time) {
-		if (time <= clock) {
+		if (time <= getClock()) {
 			return false;
 		} else {
 			terminateAt = time;
@@ -349,7 +349,7 @@ public class CloudSim {
 		future = new FutureQueue();
 		deferred = new DeferredQueue();
 		waitPredicates = new HashMap<Integer, Predicate>();
-		clock = 0;
+		setClock(0);
 		running = false;
 	}
 
@@ -369,7 +369,7 @@ public class CloudSim {
 	 * @return the simulation time
 	 */
 	public static double clock() {
-		return clock;
+		return getClock();
 	}
 
 	/**
@@ -474,12 +474,10 @@ public class CloudSim {
 		SimEvent evt;
 		if (running) {
 			// Post an event to make this entity
-			evt = new SimEvent(SimEvent.CREATE, clock, 1, 0, 0, e);
+			evt = new SimEvent(SimEvent.CREATE, getClock(), 1, 0, 0, e);
 			future.addEvent(evt);
 		}
 		if (e.getId() == -1) { // Only add once!
-			
-			//System.out.println("From CloudSim.addEntity(): Adding SimEntity "+e.getName());
 			int id = entities.size();
 			e.setId(id);
 			entities.add(e);
@@ -570,7 +568,7 @@ public class CloudSim {
 	 * @param delay the delay
 	 */
 	public static void hold(int src, long delay) {
-		SimEvent e = new SimEvent(SimEvent.HOLD_DONE, clock + delay, src);
+		SimEvent e = new SimEvent(SimEvent.HOLD_DONE, getClock() + delay, src);
 		future.addEvent(e);
 		entities.get(src).setState(SimEntity.HOLDING);
 	}
@@ -582,7 +580,7 @@ public class CloudSim {
 	 * @param delay the delay
 	 */
 	public static void pause(int src, double delay) {
-		SimEvent e = new SimEvent(SimEvent.HOLD_DONE, clock + delay, src);
+		SimEvent e = new SimEvent(SimEvent.HOLD_DONE, getClock() + delay, src);
 		future.addEvent(e);
 		entities.get(src).setState(SimEntity.HOLDING);
 	}
@@ -601,7 +599,7 @@ public class CloudSim {
 			throw new IllegalArgumentException("Send delay can't be negative.");
 		}
 
-		SimEvent e = new SimEvent(SimEvent.SEND, clock + delay, src, dest, tag, data);
+		SimEvent e = new SimEvent(SimEvent.SEND, getClock() + delay, src, dest, tag, data);
 		future.addEvent(e);
 	}
 
@@ -619,7 +617,7 @@ public class CloudSim {
 			throw new IllegalArgumentException("Send delay can't be negative.");
 		}
 
-		SimEvent e = new SimEvent(SimEvent.SEND, clock + delay, src, dest, tag, data);
+		SimEvent e = new SimEvent(SimEvent.SEND, getClock() + delay, src, dest, tag, data);
 		future.addEventFirst(e);
 	}
 
@@ -753,10 +751,10 @@ public class CloudSim {
 		int dest, src;
 		SimEntity dest_ent;
 		// Update the system's clock
-		if (e.eventTime() < clock) {
+		if (e.eventTime() < getClock()) {
 			throw new IllegalArgumentException("Past event detected.");
 		}
-		clock = e.eventTime();
+		setClock(e.eventTime());
 
 		// Ok now process it
 		switch (e.getType()) {
@@ -814,8 +812,8 @@ public class CloudSim {
 		running = true;
 		// Start all the entities
 		for (SimEntity ent : entities) {
-			//System.out.println("From CloudSim.runStart(): Starting SimEntity "+ent.getName());
 			ent.startEntity();
+			System.out.println("Strating entity : "+ent.getName());
 		}
 
 		printMessage("Entities started.");
@@ -848,7 +846,7 @@ public class CloudSim {
 	 * @return true, if successful otherwise.
 	 */
 	public static boolean pauseSimulation(long time) {
-		if (time <= clock) {
+		if (time <= getClock()) {
 			return false;
 		} else {
 			pauseAt = time;
@@ -864,7 +862,7 @@ public class CloudSim {
 	public static boolean resumeSimulation() {
 		paused = false;
 
-		if (pauseAt <= clock) {
+		if (pauseAt <= getClock()) {
 			pauseAt = -1;
 		}
 
@@ -887,17 +885,17 @@ public class CloudSim {
 			}
 
 			// this block allows termination of simulation at a specific time
-			if (terminateAt > 0.0 && clock >= terminateAt) {
+			if (terminateAt > 0.0 && getClock() >= terminateAt) {
 				terminateSimulation();
-				clock = terminateAt;
+				setClock(terminateAt);
 				break;
 			}
 
 			if (pauseAt != -1
-					&& ((future.size() > 0 && clock <= pauseAt && pauseAt <= future.iterator().next()
-							.eventTime()) || future.size() == 0 && pauseAt <= clock)) {
+					&& ((future.size() > 0 && getClock() <= pauseAt && pauseAt <= future.iterator().next()
+							.eventTime()) || future.size() == 0 && pauseAt <= getClock())) {
 				pauseSimulation();
-				clock = pauseAt;
+				setClock(pauseAt);
 			}
 
 			while (paused) {
@@ -933,6 +931,7 @@ public class CloudSim {
 
 		for (SimEntity ent : entities) {
 			ent.shutdownEntity();
+			System.out.println("shuting down entity : "+ent.getName());
 		}
 
 		// reset all static variables
@@ -941,7 +940,7 @@ public class CloudSim {
 		entitiesByName = null;
 		future = null;
 		deferred = null;
-		clock = 0L;
+		setClock(0L);
 		running = false;
 
 		waitPredicates = null;
@@ -973,6 +972,14 @@ public class CloudSim {
 	 */
 	public static boolean isPaused() {
 		return paused;
+	}
+
+	public static double getClock() {
+		return clock;
+	}
+
+	public static void setClock(double clock) {
+		CloudSim.clock = clock;
 	}
 
 }

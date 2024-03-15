@@ -12,6 +12,7 @@ public class ModuleMapping {
 	protected Map<String, List<String>> moduleMapping;
 	
 	public static ModuleMapping createModuleMapping(){
+		System.out.println("\nCreating ModuleMapping");
 		return new ModuleMapping();
 	}
 

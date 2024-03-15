@@ -4,12 +4,17 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Pe;
 import org.cloudbus.cloudsim.Storage;
 import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.network.DelayMatrix_Float;
+import org.cloudbus.cloudsim.network.TopologicalGraph;
+import org.cloudbus.cloudsim.network.TopologicalLink;
+import org.cloudbus.cloudsim.network.TopologicalNode;
 import org.cloudbus.cloudsim.power.PowerHost;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import org.cloudbus.cloudsim.sdn.overbooking.BwProvisionerOverbooking;
@@ -45,11 +50,30 @@ public class VRGameFog {
 	static List<Sensor> sensors = new ArrayList<Sensor>();
 	static List<Actuator> actuators = new ArrayList<Actuator>();
 	
-	static boolean CLOUD = false;
+	static boolean CLOUD = true;
 	
-	static int numOfDepts = 2;
-	static int numOfMobilesPerDept = 5;
-	static double EEG_TRANSMISSION_TIME = 5;
+	/*
+	 * Left & right latency for Datacenter pour le projet
+	 */
+	public static final float leftLatencyDC = 1000;
+	public static final float rightLatencyDC = 1000;
+	
+	/* 
+	 * infrastructure pour le projet 
+	 */
+	public static int nb_HGW=-1; //5 HGW per LFOG
+	public static final int nb_LFOG = -1; //2 LFOG per RFOG
+	public static final int nb_RFOG = -1; //2 RFOG per DC
+	public static final int nb_DC = -1; //
+	
+	
+	/*
+	 * L'infrastructure du VRGame
+	 */
+	
+	static int numOfDepts = 4;
+	static int numOfMobilesPerDept = 6;
+	static double EEG_TRANSMISSION_TIME = 5.1;
 	
 	public static void main(String[] args) {
 
@@ -67,13 +91,28 @@ public class VRGameFog {
 			
 			FogBroker broker = new FogBroker("broker");
 			
+			/*
+			 * Creation des noeuds de Fog
+			 */
+			createFogDevices(broker.getId(), appId);
+			createSensorsAndActuators(broker.getId(), appId);
+			
+			
+			/*
+			 * Creation de l'application
+			 */
 			Application application = createApplication(appId, broker.getId());
 			application.setUserId(broker.getId());
 			
-			createFogDevices(broker.getId(), appId);
-			
+			/*
+			 * La création du catalogue des emplacements des services (ModuleMapping).
+			 */
 			ModuleMapping moduleMapping = ModuleMapping.createModuleMapping(); // initializing a module mapping
 			
+			
+			/*
+			 * Placement des services 
+			 */
 			if(CLOUD){
 				// if the mode of deployment is cloud-based
 				/*moduleMapping.addModuleToDevice("connector", "cloud", numOfDepts*numOfMobilesPerDept); // fixing all instances of the Connector module to the Cloud
@@ -93,7 +132,9 @@ public class VRGameFog {
 				// rest of the modules will be placed by the Edge-ward placement policy
 			}
 			
-			
+			/*
+			 * Creation de l'entité controller
+			 */
 			Controller controller = new Controller("master-controller", fogDevices, sensors, 
 					actuators);
 			
@@ -102,7 +143,22 @@ public class VRGameFog {
 							:(new ModulePlacementEdgewards(fogDevices, sensors, actuators, application, moduleMapping)));
 
 			TimeKeeper.getInstance().setSimulationStartTime(Calendar.getInstance().getTimeInMillis());
-
+			
+			printDevices();
+			
+			System.out.println("Latencies computation...");
+			TopologicalGraph graph = computeTopologicalGraph(fogDevices);
+			new DelayMatrix_Float(graph, false);
+			
+			
+			
+			printAllToAllLatencies();
+			
+			System.out.println();
+			
+			/*
+			 * Lancement de la simulation
+			 */
 			CloudSim.startSimulation();
 
 			CloudSim.stopSimulation();
@@ -113,6 +169,34 @@ public class VRGameFog {
 			Log.printLine("Unwanted errors happen");
 		}
 	}
+	
+	private static void printDevices() {
+		System.out.println("\nFog devices : ");
+		for (FogDevice fogdev : fogDevices) {
+			 System.out.println(fogdev.getName()+"  idEntity = "+fogdev.getId()+" up= "+fogdev.getParentId()+" left ="+fogdev.getLeftId()+" leftLatency = "+fogdev.getLeftLatency()+" right ="+fogdev.getRightId()+" rightLatency="+fogdev.getRightLatency()+" children = "+fogdev.getChildrenIds()+" childrenLatencies ="+fogdev.getChildToLatencyMap()+" Storage = "+fogdev.getVmAllocationPolicy().getHostList().get(0).getStorage()+" |	");
+		}
+
+		// System.out.println("\nSensors : ");
+		for (Sensor snr : sensors) {
+			 System.out.println(snr.getName()+"  HGW_ID = "+snr.getGatewayDeviceId()+" TupleType = "+snr.getTupleType()+" Latency = "+snr.getLatency()+" |	");
+		}
+		// System.out.println("\nActuators : ");
+		for (Actuator act : actuators) {
+			 System.out.println(act.getName()+" GW_ID = "+act.getGatewayDeviceId()+" Act_Type= "+act.getActuatorType()+" Latency = "+act.getLatency()+" |	");
+		}
+		 System.out.println("\n");
+
+	}
+	
+	private static void printAllToAllLatencies() {
+		System.out.println("\nprint AllToAll Latencies");
+		for (FogDevice src : fogDevices) {
+			for (FogDevice dest : fogDevices) {
+				System.out.println("Latency from "+src.getName()+" To "+dest.getName()+" = " +DelayMatrix_Float.getFastestLink(src.getId(), dest.getId()));
+			}
+			System.out.println();
+		}
+	}
 
 	/**
 	 * Creates the fog devices in the physical topology of the simulation.
@@ -120,8 +204,15 @@ public class VRGameFog {
 	 * @param appId
 	 */
 	private static void createFogDevices(int userId, String appId) {
+		/*
+		 * Creation de cloud
+		 */
 		FogDevice cloud = createFogDevice("cloud", 44800, 40000, 100, 10000, 0, 0.01, 16*103, 16*83.25); // creates the fog device Cloud at the apex of the hierarchy with level=0
 		cloud.setParentId(-1);
+		
+		/*
+		 * Creation du proxy
+		 */
 		FogDevice proxy = createFogDevice("proxy-server", 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333); // creates the fog device Proxy Server (level=1)
 		proxy.setParentId(cloud.getId()); // setting Cloud as parent of the Proxy Server
 		proxy.setUplinkLatency(100); // latency of connection from Proxy Server to the Cloud is 100 ms
@@ -130,17 +221,26 @@ public class VRGameFog {
 		fogDevices.add(proxy);
 		
 		for(int i=0;i<numOfDepts;i++){
+			/*
+			 * creation des départements
+			 */
 			addGw(i+"", userId, appId, proxy.getId()); // adding a fog device for every Gateway in physical topology. The parent of each gateway is the Proxy Server
 		}
 		
 	}
 
 	private static FogDevice addGw(String id, int userId, String appId, int parentId){
+		/*
+		 * creation d'un département
+		 */
 		FogDevice dept = createFogDevice("d-"+id, 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333);
 		fogDevices.add(dept);
 		dept.setParentId(parentId);
 		dept.setUplinkLatency(4); // latency of connection between gateways and proxy server is 4 ms
 		for(int i=0;i<numOfMobilesPerDept;i++){
+			/*
+			 * Creation des mobiles
+			 */
 			String mobileId = id+"-"+i;
 			FogDevice mobile = addMobile(mobileId, userId, appId, dept.getId()); // adding mobiles to the physical topology. Smartphones have been modeled as fog devices as well.
 			mobile.setUplinkLatency(2); // latency of connection between the smartphone and proxy server is 4 ms
@@ -150,17 +250,54 @@ public class VRGameFog {
 	}
 	
 	private static FogDevice addMobile(String id, int userId, String appId, int parentId){
+		/*
+		 * Creation d'un mobile
+		 */
 		FogDevice mobile = createFogDevice("m-"+id, 1000, 1000, 10000, 270, 3, 0, 87.53, 82.44);
 		mobile.setParentId(parentId);
-		Sensor eegSensor = new Sensor("s-"+id, "EEG", userId, appId, new DeterministicDistribution(EEG_TRANSMISSION_TIME)); // inter-transmission time of EEG sensor follows a deterministic distribution
-		sensors.add(eegSensor);
-		Actuator display = new Actuator("a-"+id, userId, appId, "DISPLAY");
-		actuators.add(display);
-		eegSensor.setGatewayDeviceId(mobile.getId());
-		eegSensor.setLatency(6.0);  // latency of connection between EEG sensors and the parent Smartphone is 6 ms
-		display.setGatewayDeviceId(mobile.getId());
-		display.setLatency(1.0);  // latency of connection between Display actuator and the parent Smartphone is 1 ms
+		
+//		/*
+//		 * Creation d'un capteur
+//		 */
+//		Sensor eegSensor = new Sensor("s-"+id, "EEG", userId, appId, new DeterministicDistribution(EEG_TRANSMISSION_TIME)); // inter-transmission time of EEG sensor follows a deterministic distribution
+//		sensors.add(eegSensor);
+//		
+//		/*
+//		 * Creation d'un actionneur
+//		 */
+//		Actuator display = new Actuator("a-"+id, userId, appId, "DISPLAY");
+//		actuators.add(display);
+//		eegSensor.setGatewayDeviceId(mobile.getId());
+//		eegSensor.setLatency(6.0);  // latency of connection between EEG sensors and the parent Smartphone is 6 ms
+//		display.setGatewayDeviceId(mobile.getId());
+//		display.setLatency(1.0);  // latency of connection between Display actuator and the parent Smartphone is 1 ms
 		return mobile;
+	}
+	
+	private static void createSensorsAndActuators(int userId, String appId) {
+		for(FogDevice mobile : fogDevices) {
+			
+			if(mobile.getName().startsWith("m-")) {
+				
+					String id = mobile.getName().substring(2);
+					/*
+					 * Creation d'un capteur
+					 */
+					Sensor eegSensor = new Sensor("s-"+id, "EEG", userId, appId, new DeterministicDistribution(EEG_TRANSMISSION_TIME)); // inter-transmission time of EEG sensor follows a deterministic distribution
+					sensors.add(eegSensor);
+					
+					/*
+					 * Creation d'un actionneur
+					 */
+					Actuator display = new Actuator("a-"+id, userId, appId, "DISPLAY");
+					actuators.add(display);
+					eegSensor.setGatewayDeviceId(mobile.getId());
+					eegSensor.setLatency(6.0);  // latency of connection between EEG sensors and the parent Smartphone is 6 ms
+					display.setGatewayDeviceId(mobile.getId());
+					display.setLatency(1.0); 
+				
+			}
+		}
 	}
 	
 	/**
@@ -218,9 +355,12 @@ public class VRGameFog {
 				costPerStorage, costPerBw);
 
 		FogDevice fogdevice = null;
+		int right = getRight(nodeName);
+		int left = getleft(nodeName);
+
 		try {
-			fogdevice = new FogDevice(nodeName, characteristics, 
-					new AppModuleAllocationPolicy(hostList), storageList, 10, upBw, downBw, 0, ratePerMips);
+			fogdevice = new FogDevice(nodeName, characteristics,new AppModuleAllocationPolicy(hostList), storageList,
+					right, left, getRightLatency(nodeName, right),getLeftLatency(nodeName, left), 10, upBw, downBw, 0,ratePerMips);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -228,6 +368,48 @@ public class VRGameFog {
 		fogdevice.setLevel(level);
 		return fogdevice;
 	}
+	
+
+	//pour le projet
+	private static float getRightLatency(String nodeName, int right) {
+		if ((nodeName.startsWith("DC")) && (right != -1))
+			return rightLatencyDC;
+		return -1;
+	}
+	
+
+	//pour le projet
+	private static float getLeftLatency(String nodeName, int left) {
+		if ((nodeName.startsWith("DC")) && (left != -1))
+			return leftLatencyDC;
+		return -1;
+	}
+	
+
+	//pour le projet
+	private static int getleft(String nodeName) {
+		int fogId;
+		if ((nodeName.startsWith("DC"))) {
+			fogId = Integer.valueOf(nodeName.substring(2));
+			if (fogId > 0) {
+				return fogId - 1 + 3;
+			} 
+		} 
+		return -1;
+	}
+	
+	//pour le projet
+	private static int getRight(String nodeName) {
+		int fogId;
+		if ((nodeName.startsWith("DC"))) {
+			fogId = Integer.valueOf(nodeName.substring(2));
+			if ((nb_DC > 1) && (fogId < (nb_DC - 1))) {
+				return fogId + 1 + 3;
+			} 
+		}
+		return -1;
+	}
+
 
 	/**
 	 * Function to create the EEG Tractor Beam game application in the DDF model. 
@@ -241,19 +423,21 @@ public class VRGameFog {
 		Application application = Application.createApplication(appId, userId); // creates an empty application model (empty directed graph)
 		
 		/*
-		 * Adding modules (vertices) to the application model (directed graph)
+		 * ajout des services
 		 */
 		application.addAppModule("client", 10); // adding module Client to the application model
 		application.addAppModule("concentration_calculator", 10); // adding module Concentration Calculator to the application model
 		application.addAppModule("connector", 10); // adding module Connector to the application model
 		
 		/*
-		 * Connecting the application modules (vertices) in the application model (directed graph) with edges
-		 */
-		if(EEG_TRANSMISSION_TIME==10)
-			application.addAppEdge("EEG", "client", 2000, 500, "EEG", Tuple.UP, AppEdge.SENSOR); // adding edge from EEG (sensor) to Client module carrying tuples of type EEG
-		else
-			application.addAppEdge("EEG", "client", 3000, 500, "EEG", Tuple.UP, AppEdge.SENSOR);
+		 * ajout des dépendance de données entre les services
+		 */	
+		for(Sensor snr : sensors) {
+			//System.out.println(snr.getName());
+			application.addAppEdge(snr.getName(), "client", 3000, 500, "EEG", Tuple.UP, AppEdge.SENSOR);
+			
+		}
+				
 		application.addAppEdge("client", "concentration_calculator", 3500, 500, "_SENSOR", Tuple.UP, AppEdge.MODULE); // adding edge from Client to Concentration Calculator module carrying tuples of type _SENSOR
 		application.addAppEdge("concentration_calculator", "connector", 100, 1000, 1000, "PLAYER_GAME_STATE", Tuple.UP, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Concentration Calculator to Connector module carrying tuples of type PLAYER_GAME_STATE
 		application.addAppEdge("concentration_calculator", "client", 14, 500, "CONCENTRATION", Tuple.DOWN, AppEdge.MODULE);  // adding edge from Concentration Calculator to Client module carrying tuples of type CONCENTRATION
@@ -262,21 +446,58 @@ public class VRGameFog {
 		application.addAppEdge("client", "DISPLAY", 1000, 500, "GLOBAL_STATE_UPDATE", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type GLOBAL_STATE_UPDATE
 		
 		/*
-		 * Defining the input-output relationships (represented by selectivity) of the application modules. 
+		 * ajout des taux de production des données (de sortie) en fonction du nombre des données traitées (d'entrée)
 		 */
 		application.addTupleMapping("client", "EEG", "_SENSOR", new FractionalSelectivity(0.9)); // 0.9 tuples of type _SENSOR are emitted by Client module per incoming tuple of type EEG 
 		application.addTupleMapping("client", "CONCENTRATION", "SELF_STATE_UPDATE", new FractionalSelectivity(1.0)); // 1.0 tuples of type SELF_STATE_UPDATE are emitted by Client module per incoming tuple of type CONCENTRATION 
 		application.addTupleMapping("concentration_calculator", "_SENSOR", "CONCENTRATION", new FractionalSelectivity(1.0)); // 1.0 tuples of type CONCENTRATION are emitted by Concentration Calculator module per incoming tuple of type _SENSOR 
-		application.addTupleMapping("client", "GLOBAL_GAME_STATE", "GLOBAL_STATE_UPDATE", new FractionalSelectivity(1.0)); // 1.0 tuples of type GLOBAL_STATE_UPDATE are emitted by Client module per incoming tuple of type GLOBAL_GAME_STATE
+		application.addTupleMapping("client", "GLOBAL_GAME_STATE", "GLOBAL_STATE_UPDATE", new FractionalSelectivity(1.0)); // 1.0 tuples of type GLOBAL_STATE_UPDATE are emitted by Client module per incoming tuple of type GLOBAL_GAME_STATE 
 	
 		/*
-		 * Defining application loops to monitor the latency of. 
-		 * Here, we add only one loop for monitoring : EEG(sensor) -> Client -> Concentration Calculator -> Client -> DISPLAY (actuator)
+		 * défintion de l'applicaiton loop pour la mésure des latences dans les entités physiques.
 		 */
 		final AppLoop loop1 = new AppLoop(new ArrayList<String>(){{add("EEG");add("client");add("concentration_calculator");add("client");add("DISPLAY");}});
 		List<AppLoop> loops = new ArrayList<AppLoop>(){{add(loop1);}};
 		application.setLoops(loops);
 		
 		return application;
+	}
+	
+public static TopologicalGraph computeTopologicalGraph(List<FogDevice> fogDevices){
+		
+		TopologicalGraph graph = new TopologicalGraph();
+		
+		TopologicalNode node =null;
+		TopologicalLink link =null;
+//		System.out.println("Graph construction...");
+		
+		for(FogDevice fogDevice : fogDevices){
+			
+			node =  new TopologicalNode(fogDevice.getId()-3, fogDevice.getName(),0,0);
+			graph.addNode(node);
+			
+			/* ADD cheldren nodes */
+			if(fogDevice.getChildrenIds() != null){
+				Map<Integer, Double> childMap = fogDevice.getChildToLatencyMap();
+				for(Integer key : childMap.keySet()){
+					link = new TopologicalLink(fogDevice.getId()-3,(int) key-3, childMap.get(key).floatValue() , (float)30000);
+					graph.addLink(link);
+				}
+			}
+			
+	
+			/* ADD Right Link to Graph */
+			if(fogDevice.getRightId()!=-1){
+				link = new TopologicalLink(fogDevice.getId()-3,fogDevice.getRightId()-3, fogDevice.getRightLatency(),30000);
+				graph.addLink(link);
+			}
+		}
+		
+		
+		//System.out.println(graph.toString());
+		
+		return graph;
+
+		
 	}
 }

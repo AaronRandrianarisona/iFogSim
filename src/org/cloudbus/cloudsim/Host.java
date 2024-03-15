@@ -200,6 +200,14 @@ public class Host {
 	 * @post $none
 	 */
 	public boolean vmCreate(Vm vm) {
+		
+		
+		if(getTotalMips() < vm.getMips()) {
+			Log.printLine("[VmScheduler.vmCreate] Allocation of VM #" + vm.getId() + " to Host #" + getId()
+			+ " failed by mips");
+			return false;
+		}
+		
 		if (getStorage() < vm.getSize()) {
 			Log.printLine("[VmScheduler.vmCreate] Allocation of VM #" + vm.getId() + " to Host #" + getId()
 					+ " failed by storage");

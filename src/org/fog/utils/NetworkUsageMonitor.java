@@ -8,10 +8,6 @@ public class NetworkUsageMonitor {
 		networkUsage += latency*tupleNwSize;
 	}
 	
-	public static void sendingModule(double latency, long moduleSize){
-		networkUsage += latency*moduleSize;
-	}
-	
 	public static double getNetworkUsage(){
 		return networkUsage;
 	}

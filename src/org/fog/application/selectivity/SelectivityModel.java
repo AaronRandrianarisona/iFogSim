@@ -25,4 +25,6 @@ public interface SelectivityModel {
 	 */
 	public double getMaxRate();
 	
+	public double getSelectivity();
+	
 }

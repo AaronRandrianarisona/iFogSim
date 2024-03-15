@@ -718,6 +718,10 @@ public class Datacenter extends SimEntity {
 			Host host = getVmAllocationPolicy().getHost(vmId, userId);
 			Vm vm = host.getVm(vmId, userId);
 			CloudletScheduler scheduler = vm.getCloudletScheduler();
+			
+			
+			//islam on prend pas en compte le stockage
+			fileTransferTime = 0;
 			double estimatedFinishTime = scheduler.cloudletSubmit(cl, fileTransferTime);
 			
 			// if this cloudlet is in the exec queue
@@ -725,9 +729,8 @@ public class Datacenter extends SimEntity {
 				estimatedFinishTime += fileTransferTime;
 				/*	edited by HARSHIT	*/
 				//if(getName().equals("gateway-3"))
-				//System.out.println(getName()+" : ESTIMATED FINISH TIME ON "+((StreamOperator)vm).getName()+": "+estimatedFinishTime);
-				send(getId(), CloudSim.getMinTimeBetweenEvents()
-						+estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
+				System.out.println(getName()+" : ESTIMATED FINISH TIME ON VM Id: "+vm.getId()+": "+estimatedFinishTime);
+				send(getId(), CloudSim.getMinTimeBetweenEvents()+estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
 				/*	edit done	*/
 			}
 

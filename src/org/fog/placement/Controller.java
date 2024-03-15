@@ -36,6 +36,7 @@ public class Controller extends SimEntity{
 	
 	public Controller(String name, List<FogDevice> fogDevices, List<Sensor> sensors, List<Actuator> actuators) {
 		super(name);
+		System.out.println("\nCreating the Controller entity");
 		this.applications = new HashMap<String, Application>();
 		setAppLaunchDelays(new HashMap<String, Integer>());
 		setAppModulePlacementPolicy(new HashMap<String, ModulePlacement>());
@@ -100,9 +101,9 @@ public class Controller extends SimEntity{
 		case FogEvents.STOP_SIMULATION:
 			CloudSim.stopSimulation();
 			printTimeDetails();
-			printPowerDetails();
-			printCostDetails();
-			printNetworkUsageDetails();
+			//printPowerDetails();
+			//printCostDetails();
+			//printNetworkUsageDetails();
 			System.exit(0);
 			break;
 			
@@ -115,7 +116,7 @@ public class Controller extends SimEntity{
 
 	private FogDevice getCloud(){
 		for(FogDevice dev : getFogDevices())
-			if(dev.getName().equals("cloud"))
+			if(dev.getName().equals("Fog1"))
 				return dev;
 		return null;
 	}
@@ -165,10 +166,16 @@ public class Controller extends SimEntity{
 		System.out.println("TUPLE CPU EXECUTION DELAY");
 		System.out.println("=========================================");
 		
-		for(String tupleType : TimeKeeper.getInstance().getTupleTypeToAverageCpuTime().keySet()){
-			System.out.println(tupleType + " ---> "+TimeKeeper.getInstance().getTupleTypeToAverageCpuTime().get(tupleType));
-		}
+		double total_execution_time = 0;
 		
+		for(String tupleType : TimeKeeper.getInstance().getTupleTypeToAverageCpuTime().keySet()){
+			System.out.println(tupleType + " CPU time "+TimeKeeper.getInstance().getTupleTypeToAverageCpuTime().get(tupleType));
+			System.out.println(tupleType + " Excution times "+TimeKeeper.getInstance().getTupleTypeToExecutedTupleCount().get(tupleType));
+			total_execution_time += TimeKeeper.getInstance().getTupleTypeToAverageCpuTime().get(tupleType) *
+					         TimeKeeper.getInstance().getTupleTypeToExecutedTupleCount().get(tupleType);
+		}
+		System.out.println("Total execution Time = "+total_execution_time);
+		System.out.println("Total data transfert Time = "+TimeKeeper.total_data_transfert_time);
 		System.out.println("=========================================");
 	}
 
