@@ -185,35 +185,82 @@ public class SmartCity {
 		 */
 		int dc_mips = 1000, dcRAM = 1000*1000;
 
+		ArrayList<FogDevice> dcs = new ArrayList<>();//Liste des datacenters
+
+
 		for (int i = 0; i < nb_DC ; i++) {
 			FogDevice dc = createFogDevice("DC"+i, dc_mips, dcRAM, 10000, 10000, 1, 0.0, 107.339,  83.4333);
 			dc.setParentId(-1);
+			dcs.add(dc);
+			fogDevices.add(dc);
 		}
 		
 		/*
 		 * Cr�ation des RPOP, il faut donner le nom "RPOP" suivi par son num�ro 
 		 */
 		int rpop_mips = 500, rpopRAM = 10*1000;
+
+		ArrayList<FogDevice> rpops = new ArrayList<>();
+
+		int quotaRFOG = nb_RFOG / nb_DC ;
+		int dcnum = 0;
+
 		for (int i = 0; i < nb_RFOG ; i++) {
 			FogDevice rpop = createFogDevice("RPOP"+i, rpop_mips, rpopRAM, 10000, 10000, 1, 0.0, 107.339,  83.4333);
-			int dcnum = i % nb_DC;
+			
+			if (i % quotaRFOG == 0) {
+				dcnum += 1;
+			}
+
+			rpop.setParentId(dcs.get(dcnum - 1).getId());
+			rpops.add(rpop);
+			fogDevices.add(rpop);
 		}
 
 		/*
 		 * Cr�ation des LPOP, il faut donner le nom "LPOP" suivi par son num�ro 
 		 */
 		int lpop_mips = 200, lpopRAM = 5 * 1000;
+
+		ArrayList<FogDevice> lpops = new ArrayList<>();
+
+		int quotaLFOG = nb_LFOG / nb_RFOG;
+
+		int rfognum = 0;
 		for (int j = 0; j < nb_LFOG; j++) {
-			FogDevice lpop =  createFogDevice("LPOP"+j, lpop_mips, lpopRAM, 10000, 10000, 1, 0.0, 107.339, 83.4333); 
+			FogDevice lpop =  createFogDevice("LPOP"+j, lpop_mips, lpopRAM, 10000, 10000, 1, 0.0, 107.339, 83.4333);
+
+			if (j % quotaLFOG == 0) {
+				rfognum += 1;
+			}
+
+			lpop.setParentId(rpops.get(rfognum - 1).getId());
+			lpops.add(lpop);
+			fogDevices.add(lpop);
 		}
 		
 		/*
 		 * Cr�ation des Passerelles, il faut donner le nom "HGW" suivi par son num�ro 
 		 */
 		int hgw_mips = 100, hgwRAM = 1000;
+
+		
+		ArrayList<FogDevice> hgws = new ArrayList<>();
+
+		int quotaHGW = nb_HGW / nb_LFOG;
+
+		int lfgnum = 0;
+
 		for (int i = 0; i < nb_HGW; i++) {
 			FogDevice hgw =  createFogDevice("HGW"+i, hgw_mips, hgwRAM, 10000, 10000, 1, 0.0, 107.339, 83.4333); 
-			// fog2.setParentId(fog1.getId()); 
+
+			if (i % quotaHGW == 0) {
+				lfgnum += 1;
+			}
+
+			hgw.setParentId(lpops.get(lfgnum - 1).getId());
+			hgws.add(hgw);
+			fogDevices.add(hgw);
 		}
 		
 		/*
@@ -221,9 +268,17 @@ public class SmartCity {
 		 */
 		Integer nbHGW_sensors = 10;
 
+		int quotaSensors = nb_HGW / nb_LFOG;
+
+		int hgwnum = 0;
+
 		for (int i = 0; i < nbHGW_sensors * nb_HGW; i++) {
 			Sensor sensor = new Sensor("s"+i, "D"+i, userId, appId, new DeterministicDistribution(sensor_periodicite));
-		// camera.setGatewayDeviceId(fog2.getId());
+			if (i % quotaSensors == 0) {
+				hgwnum += 1;
+			}
+			sensor.setGatewayDeviceId(hgwnum - 1);
+			sensors.add(sensor);
 		}
 
 	}
