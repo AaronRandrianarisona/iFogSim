@@ -9,6 +9,19 @@ par *Aaron RANDRIANARISONA* et *Valentin RICARDO*
 - Aller dans `src/org/fog/utils/Config.java`
 - Changer la variable `MAX_SIMULATION_TIME` à 1000\*60\*60 (car en millisecondes)
 
+Fichier à modifier : `src/org/fog/test/perfeval/SmartCity.java`
+
+## Fourre tout 
+| Noeud Source      | Nombre d'instances |
+| ----------------- | ------------------ |
+| Centre de données | 5                  |
+| RFOG              | 10                 |
+| LFOG              | 20                 |
+| Passerelle        | 100                |
+| Capteurs          | 1000               |
+
+<u>Note</u>: Il y a 10 capteurs par passerelle.
+Les 100 premiers capteurs (de 0 à 99) sont affectés aux 100 passerelles. Le reste des capteurs sont affectés selon différents algos 
 
 1 Scénario = 
 1. Générer UseCase avec du random (taille MIPS, RAM? TAILLE TUPLE, ETC...)

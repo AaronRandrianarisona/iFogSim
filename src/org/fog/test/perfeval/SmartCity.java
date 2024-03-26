@@ -189,7 +189,8 @@ public class SmartCity {
 
 
 		for (int i = 0; i < nb_DC ; i++) {
-			FogDevice dc = createFogDevice("DC"+i, dc_mips, dcRAM, 10000, 10000, 1, 0.0, 107.339,  83.4333);
+			FogDevice dc = createFogDevice("DC"+i+3
+			, dc_mips, dcRAM, 10000, 10000, 1, 0.0, 107.339,  83.4333);
 			dc.setParentId(-1);
 			dcs.add(dc);
 			fogDevices.add(dc);
