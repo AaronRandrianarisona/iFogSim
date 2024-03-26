@@ -77,6 +77,8 @@ public class SmartCity {
 	/*
 	 * La p�riode de g�n�ration des donn�es de capteurs 
 	 */
+	public static int sensor_periodicite = 1000;
+
 	
 	
 	public static void main(String[] args) {
@@ -181,24 +183,49 @@ public class SmartCity {
 		 * id DC0 = 3
 		 * id DC1 = 4, etc.
 		 */
+		int dc_mips = 1000, dcRAM = 1000*1000;
+
+		for (int i = 0; i < nb_DC ; i++) {
+			FogDevice dc = createFogDevice("DC"+i, dc_mips, dcRAM, 10000, 10000, 1, 0.0, 107.339,  83.4333);
+			dc.setParentId(-1);
+		}
 		
 		/*
 		 * Cr�ation des RPOP, il faut donner le nom "RPOP" suivi par son num�ro 
 		 */
-		
+		int rpop_mips = 500, rpopRAM = 10*1000;
+		for (int i = 0; i < nb_RFOG ; i++) {
+			FogDevice rpop = createFogDevice("RPOP"+i, rpop_mips, rpopRAM, 10000, 10000, 1, 0.0, 107.339,  83.4333);
+			int dcnum = i % nb_DC;
+		}
+
 		/*
 		 * Cr�ation des LPOP, il faut donner le nom "LPOP" suivi par son num�ro 
 		 */
-		
+		int lpop_mips = 200, lpopRAM = 5 * 1000;
+		for (int j = 0; j < nb_LFOG; j++) {
+			FogDevice lpop =  createFogDevice("LPOP"+j, lpop_mips, lpopRAM, 10000, 10000, 1, 0.0, 107.339, 83.4333); 
+		}
 		
 		/*
 		 * Cr�ation des Passerelles, il faut donner le nom "HGW" suivi par son num�ro 
 		 */
+		int hgw_mips = 100, hgwRAM = 1000;
+		for (int i = 0; i < nb_HGW; i++) {
+			FogDevice hgw =  createFogDevice("HGW"+i, hgw_mips, hgwRAM, 10000, 10000, 1, 0.0, 107.339, 83.4333); 
+			// fog2.setParentId(fog1.getId()); 
+		}
 		
 		/*
 		 * Cr�ation des capteurs, il faut donner le nom "s" suivi par son num�ro 
 		 */
-		
+		Integer nbHGW_sensors = 10;
+
+		for (int i = 0; i < nbHGW_sensors * nb_HGW; i++) {
+			Sensor sensor = new Sensor("s"+i, "D"+i, userId, appId, new DeterministicDistribution(sensor_periodicite));
+		// camera.setGatewayDeviceId(fog2.getId());
+		}
+
 	}
 
 	
@@ -347,8 +374,14 @@ public class SmartCity {
 		/*
 		 * ajout des services (AppMdoule) - mips et ram demand�s
 		 */
+		Integer minRAM = 100, maxRAM = 1000;
+
+		for (int i = 0; i < 1000; i++) {
+			application.addAppModule("S" + i, minRAM + (int) (Math.random() * ((maxRAM - minRAM) + 1)));
+		}
+
 		
-		
+
 		/*
 		 * ajout des d�pendance de donn�es entre les services
 		 */		
