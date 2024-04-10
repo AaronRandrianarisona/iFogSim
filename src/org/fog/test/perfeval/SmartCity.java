@@ -62,17 +62,28 @@ public class SmartCity {
 	/*
 	 * Up latencies eg between DC and RFOG child
 	 */
+    public static final float LatencyDCRFOG = 1000;
+    public static final float LatencyLFOGRFOG = 100;
+    public static final float LatencyLFOGPass = 50;
+    public static final float LatencyCaptPass = 10;
 	
 
 	
 	/* 
 	 * infrastructure pour le projet 
 	 */
-	public static int nb_HGW=100; //5 HGW per LFOG
-	public static final int nb_LFOG = 20; //2 LFOG per RFOG
-	public static final int nb_RFOG = 10; //2  RFOG per DC
 	public static final int nb_DC = 5; //
+    public static final int nb_RFOG_per_DC = 2; // 2 RFOG per DC
+    public static final int nb_RFOG = nb_RFOG_per_DC * nb_DC; // 10 RFOG
+    public static final int nb_LFOG_per_RFOG = 2; // 2 LFOG per RFOG
+    public static final int nb_LFOG = nb_LFOG_per_RFOG * nb_RFOG; // 20 LFOG
+    public static final int nb_HGW_per_LFOG = 1; // 1 HGW per LFOG
+    public static final int nb_HGW = nb_HGW_per_LFOG * nb_LFOG; // 20 HGW
 	
+	public static final int nb_Sensor_per_HGW = 1; // 1 sensor per gateway
+    public static final int nb_Sensor = nb_Sensor_per_HGW * nb_HGW; // 20 sensors
+
+    public static final int nb_service = 200; // 200 services
 	
 	/*
 	 * La p�riode de g�n�ration des donn�es de capteurs 
@@ -189,8 +200,8 @@ public class SmartCity {
 
 
 		for (int i = 0; i < nb_DC ; i++) {
-			FogDevice dc = createFogDevice("DC"+i+3
-			, dc_mips, dcRAM, 10000, 10000, 1, 0.0, 107.339,  83.4333);
+			FogDevice dc = createFogDevice("DC"+i
+			, dc_mips, dcRAM, 10000, 10000, 1, 0.01, 107.339,  83.4333);
 			dc.setParentId(-1);
 			dcs.add(dc);
 			fogDevices.add(dc);
