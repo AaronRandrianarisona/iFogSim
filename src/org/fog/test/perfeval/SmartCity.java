@@ -133,7 +133,21 @@ public class SmartCity {
 			/*
 			 * Placement des services dans les noeuds de Fog
 			 */
-				
+			for (int i = 0; i < nb_HGW; i++) {
+                moduleMapping.addModuleToDevice("Service" + i, "HGW" + i);
+            }
+
+            // CLOUD Version
+            cloudPlacement();
+
+            // RANDOM Version
+            //randomPlacement();
+
+            // Fog1 Version
+            // fog1Placement();
+
+            // Fog2 Version
+            // fog2Placement();
 			
 			
 
@@ -179,7 +193,97 @@ public class SmartCity {
 			e.printStackTrace();
 			Log.printLine("Unwanted errors happen");
 		}
-	}
+	} // fin main
+
+    /******** LISTE DES ALGORYTHMES ********/
+
+    // N°1 : Version CLOUD
+    public static void cloudPlacement(){
+        for (int i = nb_HGW; i < nb_service; i++) {
+            // Ajout des service dans un des datacenters au hasard
+            int dc = Math.round((float) Math.random() * (nb_DC - 1));
+            moduleMapping.addModuleToDevice("Service" + i, "DC" + dc);
+        }
+    }
+
+    // N°2 : Version RANDOM
+    public static void randomPlacement() { // Ajout des service dans un des fogdevices au hasard
+        for (int i = nb_HGW; i < nb_service; i++) {                
+            // On prend aléatoirement un appareil parmi les FogDevices
+            // Tant que le device n'a pas les mips ni la ram nécéssaire pour le service, on en prend aléatoirement un autre
+            do {
+                device = Math.round((float) Math.random() * (fogDevices.size() - 1));
+
+                boolean isMipsSpaceLargeEnough = fogDevices.get(device).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
+                boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+            } while (isMipsSpaceLargeEnough || isRamSpaceLargeEnough);
+
+            // Ajout du service sur le FogDevice
+            moduleMapping.addModuleToDevice("Service" + i, fogDevices.get(device).getName());
+        }
+    }
+
+    // N°3 : Version FOG1
+    public static void fog1Placement(){
+        // Stratégie de placement : 3 services par fogDevices (HGW -> LFogX -> RFogX -> DataCenterX)
+
+        // Tri des FogDevices dans l'ordre croissant en fonction des MIPS disponibles
+		ArrayList<FogDevice> sortedFogDevices = new ArrayList<>(fogDevices);
+
+		// Tri sur les fogdevices pour exclure les HGW
+		sortedFogDevices.sort(Comparator.comparing(fd -> ((FogDevice) fd).getHost().getTotalMips()));
+
+		int j = 0;
+		for (int i = nb_HGW; i < nb_service; i++) {
+			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
+			boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+
+			// Ajout du service sur le premier FogDevice qui possède les ressources nécessaires
+			while (isMipsSpaceLargeEnough || isRamSpaceLargeEnough) {
+				j += 1;
+				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
+				isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+			}
+		moduleMapping.addModuleToDevice("Service" + i, sortedFogDevices.get(j).getName());
+	}// Fin FOG1
+
+	// N°4 : Version FOG2
+	public static void fog2Placement(){
+		// Statégie de placement : Du plus grand au plus petit (RFogX -> LFogX -> HGW -> DataCenterX)
+
+
+		/***** TRI DE LA LISTE DES FOG DEVICES *****/
+		// On souhaite trier les FogDevices en fonction des MIPS disponibles, sauf les datacenters
+		ArrayList<FogDevice> sortedFogDevices = new ArrayList<>(fogDevices);
+		sortedFogDevices.removeIf(fd -> fd.getName().startsWith("DC")); // Exclure les datacenters
+		sortedFogDevices.sort(Comparator.comparing(fd -> ((FogDevice) fd).getHost().getTotalMips()).reversed());
+
+		// Ajout des datacenters à la fin de la liste triée
+		ArrayList<FogDevice> datacenters = new ArrayList<>();
+		for (FogDevice fd : fogDevices) {
+			if (fd.getName().startsWith("DC")) {
+				datacenters.add(fd);
+			}
+		}
+		sortedFogDevices.addAll(datacenters);
+
+		/*****  DÉPLOIEMENT DES SERVICES SUR LES FOGDEVICES TRIÉS ORDRE DESCENDANT *****/
+		int j = 0;
+		for (int i = 0; i < nb_service; i++) {
+			// Assurez-vous que l'index est dans les limites de la liste des dispositifs
+			// triés
+			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
+			boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+
+			// Ajout du service sur le premier FogDevice qui possède les ressources nécessaires
+			while (isMipsSpaceLargeEnough || isRamSpaceLargeEnough) {
+				j += 1;
+				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
+				isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+			}
+			moduleMapping.addModuleToDevice("Service" + i, sortedFogDevices.get(j).getName());
+		}
+	} // Fin FOG2
 
 	/**
 	 * Creates the fog devices in the physical topology of the simulation.
