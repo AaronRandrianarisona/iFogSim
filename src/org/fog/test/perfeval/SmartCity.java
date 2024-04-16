@@ -193,28 +193,28 @@ public class SmartCity {
     /******** LISTE DES ALGORYTHMES ********/
 
     // N°1 : Version CLOUD
-    public static void cloudPlacement(){
+    public static void cloudPlacement(ModuleMapping moduleMapping){
         for (int i = nb_HGW; i < nb_service; i++) {
             // Ajout des service dans un des datacenters au hasard
             int dc = Math.round((float) Math.random() * (nb_DC - 1));
-            moduleMapping.addModuleToDevice("Service" + i, "DC" + dc);
+            moduleMapping.addModuleToDevice("S" + i, "DC" + dc);
         }
     }
 
     // N°2 : Version RANDOM
-    public static void randomPlacement() { // Ajout des service dans un des fogdevices au hasard
+    public static void randomPlacement(ModuleMapping moduleMapping, Application application) { // Ajout des service dans un des fogdevices au hasard
         for (int i = nb_HGW; i < nb_service; i++) {                
             // On prend aléatoirement un appareil parmi les FogDevices
             // Tant que le device n'a pas les mips ni la ram nécéssaire pour le service, on en prend aléatoirement un autre
             do {
-                device = Math.round((float) Math.random() * (fogDevices.size() - 1));
+                int device = Math.round((float) Math.random() * (fogDevices.size() - 1));
 
-                boolean isMipsSpaceLargeEnough = fogDevices.get(device).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
-                boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+                boolean isMipsSpaceLargeEnough = fogDevices.get(device).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
+                boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
             } while (isMipsSpaceLargeEnough || isRamSpaceLargeEnough);
 
             // Ajout du service sur le FogDevice
-            moduleMapping.addModuleToDevice("Service" + i, fogDevices.get(device).getName());
+            moduleMapping.addModuleToDevice("S" + i, fogDevices.get(device).getName());
         }
     }
 
@@ -230,20 +230,20 @@ public class SmartCity {
 
 		int j = 0;
 		for (int i = nb_HGW; i < nb_service; i++) {
-			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
-			boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
+			boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
 
 			// Ajout du service sur le premier FogDevice qui possède les ressources nécessaires
 			while (isMipsSpaceLargeEnough || isRamSpaceLargeEnough) {
 				j += 1;
-				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
-				isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
+				isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
 			}
-		moduleMapping.addModuleToDevice("Service" + i, sortedFogDevices.get(j).getName());
+		moduleMapping.addModuleToDevice("S" + i, sortedFogDevices.get(j).getName());
 	}// Fin FOG1
 
 	// N°4 : Version FOG2
-	public static void fog2Placement(){
+	public static void fog2Placement(ModuleMapping moduleMapping, Application application){
 		// Statégie de placement : Du plus grand au plus petit (RFogX -> LFogX -> HGW -> DataCenterX)
 
 
@@ -267,16 +267,16 @@ public class SmartCity {
 		for (int i = 0; i < nb_service; i++) {
 			// Assurez-vous que l'index est dans les limites de la liste des dispositifs
 			// triés
-			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
-			boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
+			boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
 
 			// Ajout du service sur le premier FogDevice qui possède les ressources nécessaires
 			while (isMipsSpaceLargeEnough || isRamSpaceLargeEnough) {
 				j += 1;
-				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("Service" + i).getMips();
-				isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
+				isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
 			}
-			moduleMapping.addModuleToDevice("Service" + i, sortedFogDevices.get(j).getName());
+			moduleMapping.addModuleToDevice("S" + i, sortedFogDevices.get(j).getName());
 		}
 	} // Fin FOG2
 
