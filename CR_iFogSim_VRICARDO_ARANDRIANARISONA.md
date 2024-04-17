@@ -23,6 +23,8 @@ Chaque donnée produites dans le système est consommé par 1 unique service cho
 Dans notre cas d'utilisation, on a augmenté le temps de simulation pour le bien du projet. Si vous souhaitez le modifier, suivre la procédure :
 - Aller dans `src/org/fog/utils/Config.java`
 - Changer la variable `MAX_SIMULATION_TIME` à 1000\*60\*60 (car en millisecondes)
+- Aller dans `src\org\cloudbus\cloudsim\Host.java`
+- Mettre en commentaire le bloc sous la condition `getTotalMips() < vm.getMips()`
 
 ## 3. Algorithmes de placement
 ### 3.1. Cloud
@@ -59,4 +61,4 @@ Figure 1 : Tableau comparatif
 Lors du développement du projet, nous et les autres groupes avons rencontrés pas mal de problèmes :
 
 - **Difficile d'exécuter le projet**. Sans une bonne machine, il est impossible d'espérer reprendre ce projet
-- **Difficulté du projet**. Pas évident de plonger dans le code et d'imaginer toute la suite des évènements sans un bon cahier de charges.
+- **Difficulté du projet**. Pas évident de plonger dans le code et d'imaginer toute la suite des évènements sans un bon cahier de charges. Certaines indications prêtaient aussi à confusion, comme la nomination des capteurs en "s" qui pourrait facilement être confondue avec "service", ou bien "dc" pour la donnée du capteur avec "data center". La complexité de l'application ne rendait pas le débogage évident, par exemple pour trouver l'origine de l'erreur "[VmScheduler.vmCreate] Allocation of VM #S19 to Host #HGW19 failed by mips", il a fallu parcourir en profondeur les répertoires du projet. Au final, on ne sait pas s'il est plus pertinent de mettre en commentaire la condition sur le mips ou bien de changer les valeurs données initialement et leurs conséquences.
