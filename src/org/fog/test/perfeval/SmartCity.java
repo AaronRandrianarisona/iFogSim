@@ -1,5 +1,8 @@
 package org.fog.test.perfeval;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -95,6 +98,8 @@ public class SmartCity {
 
 		Log.printLine("Starting Smart_City...");
 
+		long start = System.currentTimeMillis();
+
 		try {
 			Log.disable();
 			// Log.enable();
@@ -136,16 +141,16 @@ public class SmartCity {
             }
 
             // CLOUD Version
-            cloudPlacement(moduleMapping);
+            //cloudPlacement(moduleMapping);
 
             // RANDOM Version
-            //randomPlacement();
+			//randomPlacement(moduleMapping,application);
 
             // Fog1 Version
-            // fog1Placement();
+            fog1Placement(moduleMapping,application);
 
             // Fog2 Version
-            // fog2Placement();
+            // fog2Placement(moduleMapping,application);
 			
 			
 
@@ -155,7 +160,7 @@ public class SmartCity {
 			 * d�fini dans moduleMapping
 			 */
 			Controller controller = new Controller("master-controller", fogDevices, sensors, actuators);
-
+			System.out.println("Module mapping : " + moduleMapping.toString());
 			controller.submitApplication(application, 0,
 					new ModulePlacementMapping(fogDevices, application, moduleMapping));
 
@@ -189,6 +194,8 @@ public class SmartCity {
 			e.printStackTrace();
 			Log.printLine("Unwanted errors happen");
 		}
+		long end = System.currentTimeMillis();
+		System.out.println("Elapsed Time in milli seconds: "+ (end-start));
 	} // fin main
 
     /******** LISTE DES ALGORYTHMES ********/
@@ -711,6 +718,7 @@ public class SmartCity {
 		ArrayList<String> consumedData = new ArrayList<>();
 		for (AppEdge appEdge : edges) {
 			if (appEdge.getSource().equals(serviceName)) {
+System.out.println("Test consumed data :" + appEdge.getDestination());
 				consumedData.add("D" + appEdge.getDestination());
 			}
 		}
