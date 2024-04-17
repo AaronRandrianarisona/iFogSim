@@ -368,7 +368,7 @@ public class SmartCity {
 		/*
 		 * Cr�ation des Passerelles, il faut donner le nom "HGW" suivi par son num�ro
 		 */
-		int hgw_mips = 100, hgwRAM = 1000;
+		int hgw_mips = 1500, hgwRAM = 1000;
 
 		ArrayList<FogDevice> hgws = new ArrayList<>();
 
