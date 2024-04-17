@@ -48,10 +48,9 @@ Cela nous donne un ordre comme ceci : (RFogX -> LFogX -> HGW -> DataCenterX)
 ## 4. Comparaison des algorithmes
 
 <!-- TODO : Insérer un graphe comparatif -->
-<center>
-<img src="./images_compte_rendu/grapheComparatifAlgos.png" alt="Graphe comparatif des temps d'exécutions des algos de placements" style="width:65%; height:auto; margin-bottom:0>
-
-</center>
+<div style=" display:flex; justify-content:center; align-self:center">
+<img src="./images_compte_rendu/grapheComparatifAlgos.png" alt="Graphe comparatif des temps d'exécutions des algos de placements" style="width:65%; height:auto;">
+</div>
 <center>
 Figure 1 : Tableau comparatif
 </center>
