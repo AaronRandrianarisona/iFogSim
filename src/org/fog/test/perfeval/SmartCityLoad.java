@@ -1,5 +1,9 @@
 package org.fog.test.perfeval;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -49,7 +53,7 @@ import org.fog.utils.distribution.DeterministicDistribution;
  * @author Harshit Gupta
  *
  */
-public class SmartCity {
+public class SmartCityLoad {
 	static List<FogDevice> fogDevices = new ArrayList<FogDevice>();
 	static List<Sensor> sensors = new ArrayList<Sensor>();
 	static List<Actuator> actuators = new ArrayList<Actuator>();
@@ -91,13 +95,17 @@ public class SmartCity {
 	 */
 	public static int sensor_periodicite = 1000;
 
+	public static ArrayList<ArrayList<ArrayList<String>>> scenario = new ArrayList<>();
+	public static final String typeOfScenario = "CREATE"; // CREATE ou LOAD, CREATE = créer un nouveau scénario, LOAD =
+															// charger un scénario existant
+
 	public static void main(String[] args) {
 
 		Log.printLine("Starting Smart_City...");
 
 		try {
-			Log.disable();
-			// Log.enable();
+			 Log.disable();
+			//Log.enable();
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance();
 			boolean trace_flag = false; // mean trace events
@@ -132,24 +140,21 @@ public class SmartCity {
 			 */
 
 			for (int i = 0; i < nb_HGW; i++) {
-                moduleMapping.addModuleToDevice("S" + i, "HGW" + i);
-            }
+				moduleMapping.addModuleToDevice("Service" + i, "HGW" + i);
+			}
 
-            // CLOUD Version
-            cloudPlacement(moduleMapping);
+			// CLOUD Version
+			cloudPlacement(moduleMapping);
 
-            // RANDOM Version
-            //randomPlacement();
+			// RANDOM Version
+			// randomPlacement(moduleMapping,application);
 
-            // Fog1 Version
-            // fog1Placement();
+			// Fog1 Version
+			// fog1Placement(moduleMapping,application);
 
-            // Fog2 Version
-            // fog2Placement();
-			
-			
+			// Fog2 Version
+			// fog2Placement(moduleMapping,application);
 
-						
 			/*
 			 * Cr�ation de l'entit� controller et application du placement des services
 			 * d�fini dans moduleMapping
@@ -191,42 +196,50 @@ public class SmartCity {
 		}
 	} // fin main
 
-    /******** LISTE DES ALGORYTHMES ********/
+	/******** LISTE DES ALGORYTHMES ********/
 
-    // N°1 : Version CLOUD
-    public static void cloudPlacement(ModuleMapping moduleMapping){
-        for (int i = nb_HGW; i < nb_service; i++) {
-            // Ajout des service dans un des datacenters au hasard
-            int dc = Math.round((float) Math.random() * (nb_DC - 1));
-            moduleMapping.addModuleToDevice("S" + i, "DC" + dc);
-        }
-    }
+	// N°1 : Version CLOUD
+	public static void cloudPlacement(ModuleMapping moduleMapping) {
+		for (int i = nb_HGW; i < nb_service; i++) {
+			// Ajout des service dans un des datacenters au hasard
+			int dc = Math.round((float) Math.random() * (nb_DC - 1));
+			moduleMapping.addModuleToDevice("Service" + i, "DC" + dc);
+		}
+	}
 
-    // N°2 : Version RANDOM
-    public static void randomPlacement(ModuleMapping moduleMapping, Application application) { // Ajout des service dans un des fogdevices au hasard
-        for (int i = nb_HGW; i < nb_service; i++) {                
-            // On prend aléatoirement un appareil parmi les FogDevices
-            // Tant que le device n'a pas les mips ni la ram nécéssaire pour le service, on en prend aléatoirement un autre
+	// N°2 : Version RANDOM
+	public static void randomPlacement(ModuleMapping moduleMapping, Application application) { // Ajout des service dans
+																								// un des fogdevices au
+																								// hasard
+		for (int i = nb_HGW; i < nb_service; i++) {
+			// On prend aléatoirement un appareil parmi les FogDevices
+			// Tant que le device n'a pas les mips ni la ram nécéssaire pour le service, on
+			// en prend aléatoirement un autre
 			int device = Math.round((float) Math.random() * (fogDevices.size() - 1));
-			boolean isMipsSpaceLargeEnough = fogDevices.get(device).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
-			boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
+			boolean isMipsSpaceLargeEnough = fogDevices.get(device).getHost().getAvailableMips() >= application
+					.getModuleByName("Service" + i).getMips();
+			boolean isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner()
+					.getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
 
 			while (!isMipsSpaceLargeEnough || !isRamSpaceLargeEnough) {
 				device = Math.round((float) Math.random() * (fogDevices.size() - 1));
-				isMipsSpaceLargeEnough = fogDevices.get(device).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
-                isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
-			}	
+				isMipsSpaceLargeEnough = fogDevices.get(device).getHost().getAvailableMips() >= application
+						.getModuleByName("Service" + i).getMips();
+				isRamSpaceLargeEnough = fogDevices.get(device).getHost().getRamProvisioner()
+						.getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
+			}
 
-            // Ajout du service sur le FogDevice
-            moduleMapping.addModuleToDevice("S" + i, fogDevices.get(device).getName());
-        }
-    }
+			// Ajout du service sur le FogDevice
+			moduleMapping.addModuleToDevice("Service" + i, fogDevices.get(device).getName());
+		}
+	}
 
-    // N°3 : Version FOG1
-    public static void fog1Placement(ModuleMapping moduleMapping, Application application){
-        // Stratégie de placement : 3 services par fogDevices (HGW -> LFogX -> RFogX -> DataCenterX)
+	// N°3 : Version FOG1
+	public static void fog1Placement(ModuleMapping moduleMapping, Application application) {
+		// Stratégie de placement : 3 services par fogDevices (HGW -> LFogX -> RFogX ->
+		// DataCenterX)
 
-        // Tri des FogDevices dans l'ordre croissant en fonction des MIPS disponibles
+		// Tri des FogDevices dans l'ordre croissant en fonction des MIPS disponibles
 		ArrayList<FogDevice> sortedFogDevices = new ArrayList<>(fogDevices);
 
 		// Tri sur les fogdevices pour exclure les HGW
@@ -234,27 +247,33 @@ public class SmartCity {
 
 		int j = 0;
 		for (int i = nb_HGW; i < nb_service; i++) {
-			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
-			boolean isRamSpaceLargeEnough = fogDevices.get(j).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
+			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application
+					.getModuleByName("Service" + i).getMips();
+			boolean isRamSpaceLargeEnough = fogDevices.get(j).getHost().getRamProvisioner()
+					.getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
 
-			// Ajout du service sur le premier FogDevice qui possède les ressources nécessaires
+			// Ajout du service sur le premier FogDevice qui possède les ressources
+			// nécessaires
 			while (!isMipsSpaceLargeEnough || !isRamSpaceLargeEnough) {
 				j += 1;
-				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
-				isRamSpaceLargeEnough = fogDevices.get(j).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
+				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application
+						.getModuleByName("Service" + i).getMips();
+				isRamSpaceLargeEnough = fogDevices.get(j).getHost().getRamProvisioner().getAvailableRam() >= application
+						.getModuleByName("Service" + i).getRam();
 			}
-			moduleMapping.addModuleToDevice("S" + i, sortedFogDevices.get(j).getName());
+			moduleMapping.addModuleToDevice("Service" + i, sortedFogDevices.get(j).getName());
 		}
-		
+
 	}// Fin FOG1
 
 	// N°4 : Version FOG2
-	public static void fog2Placement(ModuleMapping moduleMapping, Application application){
-		// Statégie de placement : Du plus grand au plus petit (RFogX -> LFogX -> HGW -> DataCenterX)
-
+	public static void fog2Placement(ModuleMapping moduleMapping, Application application) {
+		// Statégie de placement : Du plus grand au plus petit (RFogX -> LFogX -> HGW ->
+		// DataCenterX)
 
 		/***** TRI DE LA LISTE DES FOG DEVICES *****/
-		// On souhaite trier les FogDevices en fonction des MIPS disponibles, sauf les datacenters
+		// On souhaite trier les FogDevices en fonction des MIPS disponibles, sauf les
+		// datacenters
 		ArrayList<FogDevice> sortedFogDevices = new ArrayList<>(fogDevices);
 		sortedFogDevices.removeIf(fd -> fd.getName().startsWith("DC")); // Exclure les datacenters
 		sortedFogDevices.sort(Comparator.comparing(fd -> ((FogDevice) fd).getHost().getTotalMips()).reversed());
@@ -268,21 +287,26 @@ public class SmartCity {
 		}
 		sortedFogDevices.addAll(datacenters);
 
-		/*****  DÉPLOIEMENT DES SERVICES SUR LES FOGDEVICES TRIÉS ORDRE DESCENDANT *****/
+		/***** DÉPLOIEMENT DES SERVICES SUR LES FOGDEVICES TRIÉS ORDRE DESCENDANT *****/
 		int j = 0;
 		for (int i = 0; i < nb_service; i++) {
 			// Assurez-vous que l'index est dans les limites de la liste des dispositifs
 			// triés
-			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
-			boolean isRamSpaceLargeEnough = fogDevices.get(j).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
+			boolean isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application
+					.getModuleByName("Service" + i).getMips();
+			boolean isRamSpaceLargeEnough = fogDevices.get(j).getHost().getRamProvisioner()
+					.getAvailableRam() >= application.getModuleByName("Service" + i).getRam();
 
-			// Ajout du service sur le premier FogDevice qui possède les ressources nécessaires
+			// Ajout du service sur le premier FogDevice qui possède les ressources
+			// nécessaires
 			while (!isMipsSpaceLargeEnough || !isRamSpaceLargeEnough) {
 				j += 1;
-				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application.getModuleByName("S" + i).getMips();
-				isRamSpaceLargeEnough = fogDevices.get(j).getHost().getRamProvisioner().getAvailableRam() >= application.getModuleByName("S" + i).getRam();
+				isMipsSpaceLargeEnough = sortedFogDevices.get(j).getHost().getAvailableMips() >= application
+						.getModuleByName("Service" + i).getMips();
+				isRamSpaceLargeEnough = fogDevices.get(j).getHost().getRamProvisioner().getAvailableRam() >= application
+						.getModuleByName("Service" + i).getRam();
 			}
-			moduleMapping.addModuleToDevice("S" + i, sortedFogDevices.get(j).getName());
+			moduleMapping.addModuleToDevice("Service" + i, sortedFogDevices.get(j).getName());
 		}
 	} // Fin FOG2
 
@@ -536,6 +560,32 @@ public class SmartCity {
 	 */
 	@SuppressWarnings({ "serial" })
 	private static Application createApplication(String appId, int userId) {
+		// Dans le arrayList [numéro, mips, ram]
+		ArrayList<ArrayList<String>> servicesScenario = new ArrayList<>();
+
+		// dans le arraylist [numéro_source, numéro_dest, nb_mi,
+		// nb_ram]
+		ArrayList<ArrayList<String>> lienServicesCapteurs = new ArrayList<>();
+
+		// dans le arraylist [numéro_source, numéro_dest, nb_mi,
+		// nb_ram]
+		ArrayList<ArrayList<String>> lienServicesServices = new ArrayList<>();
+
+		if (typeOfScenario.equals("LOAD")) {
+			try {
+				// Charger le scénario depuis le fichier scenario.ser
+				FileInputStream fileIn = new FileInputStream("scenario.ser");
+				ObjectInputStream in = new ObjectInputStream(fileIn);
+				scenario = (ArrayList<ArrayList<ArrayList<String>>>) in.readObject();
+				in.close();
+				fileIn.close();
+				servicesScenario = scenario.get(0);
+				lienServicesCapteurs = scenario.get(1);
+				lienServicesServices = scenario.get(2);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 
 		System.out.println("\nCreating Application");
 
@@ -545,12 +595,30 @@ public class SmartCity {
 		/*
 		 * ajout des services (AppMdoule) - mips et ram demand�s
 		 */
-		Integer minRAM = 100, maxRAM = 1000,minMips = 100, maxMips = 1000;
 
-		for (int i = 0; i < nb_service; i++) {
-			int randram = minRAM + (int) (Math.random() * ((maxRAM - minRAM) + 1));
-			int randmips = minMips + (int) (Math.random() * ((maxMips - minMips) + 1));;
-			application.addAppModule("S" + i,randmips,randram);
+		if (typeOfScenario.equals("LOAD")) {
+			for (ArrayList<String> serviceInfo : servicesScenario) {
+				int serviceI = Integer.parseInt(serviceInfo.get(0));
+				int nb_mips = Integer.parseInt(serviceInfo.get(1));
+				int nb_ram = Integer.parseInt(serviceInfo.get(2));
+
+				application.addAppModule("Service" + serviceI, nb_mips, nb_ram);
+			}
+		} else {
+			Integer minRAM = 100, maxRAM = 1000, minMips = 100, maxMips = 1000;
+
+			for (int i = 0; i < nb_service; i++) {
+				int randram = minRAM + (int) (Math.random() * ((maxRAM - minRAM) + 1));
+				int randmips = minMips + (int) (Math.random() * ((maxMips - minMips) + 1));
+				;
+				application.addAppModule("Service" + i, randmips, randram);
+
+				ArrayList<String> serviceInfo = new ArrayList<>();
+				serviceInfo.add(String.valueOf(i));
+				serviceInfo.add(String.valueOf(randmips));
+				serviceInfo.add(String.valueOf(randram));
+				servicesScenario.add(serviceInfo);
+			}
 		}
 
 		/*
@@ -569,19 +637,39 @@ public class SmartCity {
 		// vous pouvez nommer les données produites par un capteur par "DC"+i avec i est
 		// l'id du capteur
 
-		int hgwnum = 0;
+		if (typeOfScenario.equals("LOAD")) {
+			for (ArrayList<String> infoLiaison : lienServicesCapteurs) {
+				int capteurI = Integer.parseInt(infoLiaison.get(0));
+				int serviceDestNumber = Integer.parseInt(infoLiaison.get(1));
+				int nb_mi = Integer.parseInt(infoLiaison.get(2));
+				int nb_ram = Integer.parseInt(infoLiaison.get(3));
 
-		for (int i = 0; i < nb_Sensor; i++) {
-			Sensor sensor = sensors.get(i);
-
-			if (i % nb_Sensor_per_HGW == 0) {
-				hgwnum += 1;
+				application.addAppEdge("S" + capteurI, "Service" + serviceDestNumber,
+						nb_mi, nb_ram, "D" + capteurI, Tuple.UP,
+						AppEdge.SENSOR);
 			}
+		} else {
+			int hgwnum = 0;
 
-			int nb_mi = (int) (Math.random() * 90 + 10); // entre 10 et 100
-			int nb_ram = (int) (Math.random() * 900 + 100); // entre 100 et 1000
+			for (int i = 0; i < nb_Sensor; i++) {
+				Sensor sensor = sensors.get(i);
 
-			application.addAppEdge(sensor.getName(), "S" + hgwnum, nb_mi, nb_ram, "D" + i, Tuple.UP, AppEdge.SENSOR);
+				if (i % nb_Sensor_per_HGW == 0) {
+					hgwnum += 1;
+				}
+
+				int nb_mi = (int) (Math.random() * 90 + 10); // entre 10 et 100
+				int nb_ram = (int) (Math.random() * 900 + 100); // entre 100 et 1000
+
+				application.addAppEdge(sensor.getName(), "Service" + hgwnum, nb_mi, nb_ram, "D" + i, Tuple.UP,
+						AppEdge.SENSOR);
+				ArrayList<String> infoLiaison = new ArrayList<>();
+				infoLiaison.add(String.valueOf(i));
+				infoLiaison.add(String.valueOf(hgwnum));
+				infoLiaison.add(String.valueOf(nb_mi));
+				infoLiaison.add(String.valueOf(nb_ram));
+				lienServicesCapteurs.add(infoLiaison);
+			}
 		}
 
 		// les dépendances de données entre les services et les services placés dans les
@@ -591,23 +679,76 @@ public class SmartCity {
 		// vous pouvez nommer les données produites par un service par "DS"+i avec i est
 		// le numéro du service
 
-		for (int i = 0; i < nb_service; i++) {
-			int serviceDestNumber = (int) (Math.random() * application.getModules().size() - 1);
-			int nb_mi = (int) (Math.random() * 90 + 10); // entre 10 et 100
-			int nb_ram = (int) (Math.random() * 900 + 100); // entre 100 et 1000
-			application.addAppEdge("S" + i, "S" + serviceDestNumber, nb_mi, nb_ram, "DS" + i, Tuple.UP, AppEdge.MODULE);
+		if (typeOfScenario.equals("LOAD")) {
+			for (ArrayList<String> infoLiaison : lienServicesServices) {
+				int serviceI = Integer.parseInt(infoLiaison.get(0));
+				int serviceDestNumber = Integer.parseInt(infoLiaison.get(1));
+				int nb_mi = Integer.parseInt(infoLiaison.get(2));
+				int nb_ram = Integer.parseInt(infoLiaison.get(3));
+
+				application.addAppEdge("Service" + serviceI, "Service" + serviceDestNumber,
+						nb_mi, nb_ram, "DS" + serviceI, Tuple.UP,
+						AppEdge.MODULE);
+			}
+		} else {
+			for (int i = 0; i < nb_service; i++) {
+				int serviceDestNumber = (int) (Math.random() * application.getModules().size() - 1);
+				int nb_mi = (int) (Math.random() * 90 + 10); // entre 10 et 100
+				int nb_ram = (int) (Math.random() * 900 + 100); // entre 100 et 1000
+				application.addAppEdge("Service" + i, "Service" + serviceDestNumber, nb_mi, nb_ram, "DS" + i, Tuple.UP,
+						AppEdge.MODULE);
+				ArrayList<String> infoLiaison = new ArrayList<>();
+				infoLiaison.add(String.valueOf(i));
+				infoLiaison.add(String.valueOf(serviceDestNumber));
+				infoLiaison.add(String.valueOf(nb_mi));
+				infoLiaison.add(String.valueOf(nb_ram));
+				lienServicesServices.add(infoLiaison);
+			}
+			scenario.add(servicesScenario);
+			scenario.add(lienServicesCapteurs);
+			scenario.add(lienServicesServices);
 		}
 
-		
-		for (int i = 0; i < nb_service; i++) {
-			AppModule service = application.getModules().get(i);
-
-			ArrayList<String> consumedData = getConsummedDataByService(service.getName(),application.getEdges());
-			
-			for(String d : consumedData) {
-				application.addTupleMapping(service.getName(),d,"DS"+i, new FractionalSelectivity(0.1));
+		if (typeOfScenario.equals("CREATE")) {
+			try {
+				FileOutputStream fileOut = new FileOutputStream("scenario.ser");
+				ObjectOutputStream out = new ObjectOutputStream(fileOut);
+				out.writeObject(scenario);
+				out.close();
+				fileOut.close();
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
+
+		/*
+		 * ajout des taux de production des données (de sortie) en fonction du nombre
+		 * des données traitées (d'entrée)
+		 * 1 ==> 100%
+		 * 0.5 ==> 50 %
+		 * 0.1 ==> 10%
+		 */
+		for (int i = 0; i < lienServicesCapteurs.size(); i++) {
+			application.addTupleMapping("Service" + lienServicesCapteurs.get(i).get(1),
+					"D" + lienServicesCapteurs.get(i).get(1),
+					"DS" + lienServicesCapteurs.get(i).get(0), new FractionalSelectivity(0.1));
+		}
+		for (int i = 0; i < lienServicesServices.size(); i++) {
+			application.addTupleMapping("Service" + lienServicesServices.get(i).get(1),
+					"DS" + lienServicesServices.get(i).get(1),
+					"DS" + lienServicesServices.get(i).get(0), new FractionalSelectivity(0.1));
+		}
+		// for (int i = 0; i < nb_service; i++) {
+		// AppModule service = application.getModules().get(i);
+		//
+		// ArrayList<String> consumedData =
+		// getConsummedDataByService(service.getName(),application.getEdges());
+		//
+		// for(String d : consumedData) {
+		// application.addTupleMapping(service.getName(),d,"DS"+i, new
+		// FractionalSelectivity(0.1));
+		// }
+		// }
 
 		/*
 		 * Defining application loops to monitor the latency of.
@@ -615,13 +756,9 @@ public class SmartCity {
 
 		final AppLoop loop1 = new AppLoop(new ArrayList<String>() {
 			{
-				for (int i = 0; i < nb_Sensor; i++) {
-					add("s" + i);
-					add("D"+i);
-				}
 				for (int i = 0; i < nb_service; i++) {
+					add("Service" + i);
 					add("S" + i);
-					add("DS" + i);
 				}
 			}
 		});
@@ -714,7 +851,6 @@ public class SmartCity {
 				consumedData.add("D" + appEdge.getDestination());
 			}
 		}
-
 		return consumedData;
 	}
 }
