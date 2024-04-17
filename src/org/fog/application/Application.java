@@ -74,8 +74,7 @@ public class Application {
 	}
 
 	public void addAppModule(String moduleName, int mips, int ram) {
-		System.out.println("add Module: " + moduleName + " with ram: " + ram + " to application");
-
+		System.out.println("add Module: " + moduleName + " with {ram: " + ram +", mips:"+ mips+ "} to application");
 		long size = 10;
 		long bw = 10;
 		String vmm = "Xen";
