@@ -10,7 +10,12 @@ par *Aaron RANDRIANARISONA* et *Valentin RICARDO*
   - [3.3. Fog1](#33-fog1)
   - [3.4. Fog2](#34-fog2)
 - [4. Comparaison des algorithmes](#4-comparaison-des-algorithmes)
-- [5. Problèmes rencontrés](#5-problèmes-rencontrés)
+  - [4.1. Algorithme de Placement Cloud](#41-algorithme-de-placement-cloud)
+  - [4.2. Algorithme de Placement Aléatoire](#42-algorithme-de-placement-aléatoire)
+  - [4.3. Algorithme de Placement Fog1](#43-algorithme-de-placement-fog1)
+  - [4.4. Algorithme de Placement Fog2](#44-algorithme-de-placement-fog2)
+- [5. Conclusion :](#5-conclusion-)
+- [6. Problèmes rencontrés](#6-problèmes-rencontrés)
 
 
 ## 1. Sujet du projet
@@ -38,7 +43,6 @@ données) choisis aléatoirement.
 Cet algorithme à une particularité de placement plutôt spéciale. Les instances de services et les nœuds de Fog doivent être triés en ordre ascendant selon les MI et MIPS disponibles.
 Il doit y avoir 3 services par fogDevices (HGW -> LFogX -> RFogX -> DataCenterX), avec X un numéro aléatoire de fogDevice
 
-
 ### 3.4. Fog2
 De même que pour l'algo de placement Fog1, les instances de services et les nœuds de Fog doivent être triés, mais cette fois en ordre descendant.
 :warning: Attention à placer les DataCenter à la fin, sinon on retrouverait une configuration similaire à Cloud où tous les services sont déployés dans les DataCenter, ce qu'on ne veut pas. 
@@ -46,6 +50,45 @@ De même que pour l'algo de placement Fog1, les instances de services et les nœ
 Cela nous donne un ordre comme ceci : (RFogX -> LFogX -> HGW -> DataCenterX)
 
 ## 4. Comparaison des algorithmes
+
+Pour comparer les quatre algorithmes de placement, évaluons chacun en fonction de leurs caractéristiques :
+
+### 4.1. Algorithme de Placement Cloud
+- **Complexité Temporelle** : Linéaire, car il itère à travers chaque service et l'assigne à un datacenter aléatoire.
+- **Avantages** :
+  - Simple à mettre en œuvre.
+  - Distribution uniforme des services à travers les datacenters.
+- **Inconvénients** :
+  - Peut entraîner une utilisation inégale des ressources dans les datacenters.
+  - Ne prend pas en compte la latence réseau ou les capacités des appareils.
+
+### 4.2. Algorithme de Placement Aléatoire
+- **Complexité Temporelle** : Linéaire, car il itère à travers chaque service et sélectionne aléatoirement un dispositif fog.
+- **Avantages** :
+  - Relativement simple.
+  - Distribue les services de manière aléatoire, ce qui pourrait équilibrer la charge dans certains scénarios.
+- **Inconvénients** :
+  - Peut entraîner une utilisation inégale des ressources.
+  - Ignore la latence réseau et les capacités des appareils.
+  - Pas du tout fiable car inconsistant.
+
+### 4.3. Algorithme de Placement Fog1
+- **Complexité Temporelle** : Linéaire, trie les dispositifs fog en fonction des MIPS disponibles, puis itère à travers les services en les assignant aux dispositifs fog avec des ressources disponibles.
+- **Avantages** :
+  - Tente de distribuer uniformément les services en fonction des ressources disponibles.
+  - Tient compte des capacités des appareils (MIPS et RAM).
+- **Inconvénients** :
+  - Peut ne pas exploiter pleinement toutes les ressources, surtout si les appareils ont des capacités différentes.
+  - Reste sensible à la distribution inégale de la charge.
+
+### 4.4. Algorithme de Placement Fog2
+- **Complexité Temporelle** : Linéaire, trie les dispositifs fog en fonction des MIPS disponibles, puis itère à travers les services en les assignant aux dispositifs fog avec des ressources disponibles.
+- **Avantages** :
+  - Tient compte à la fois des ressources disponibles et de la proximité réseau.
+  - Priorise les plus grands dispositifs fog, ce qui peut entraîner une meilleure utilisation des ressources.
+- **Inconvénients** :
+  - La complexité peut augmenter si la topologie réseau est plus complexe.
+  - Nécessite des mesures de latence précises.
 
 <!-- TODO : Insérer un graphe comparatif -->
 <div style=" display:flex; justify-content:center; align-self:center">
@@ -56,7 +99,13 @@ Figure 1 : Tableau comparatif
 </center>
 
 
-## 5. Problèmes rencontrés
+
+## 5. Conclusion :
+- **Meilleure Approche** : L'algorithme "Fog2" semble être le plus complet car il prend en compte à la fois les capacités des appareils et la latence réseau. En priorisant les plus grands dispositifs fog et en tenant compte de la proximité réseau, il est susceptible d'obtenir une meilleure utilisation des ressources et de réduire la latence. Cependant, son efficacité peut dépendre de la topologie réseau spécifique et des caractéristiques de la charge de travail.
+- **Simplicité vs Performance** : Bien que les algorithmes "Cloud" et "Aléatoire" soient plus simples à mettre en œuvre, ils sacrifient l'optimisation des performances. Selon les besoins de l'application et l'échelle de l'architecture fog, un équilibre entre simplicité et performance doit être trouvé.
+
+
+## 6. Problèmes rencontrés
 Lors du développement du projet, nous et les autres groupes avons rencontrés pas mal de problèmes :
 
 - **Difficile d'exécuter le projet**. Sans une bonne machine, il est impossible d'espérer reprendre ce projet
